@@ -1,37 +1,33 @@
-import React, { useState, useEffect } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-import YogaCard from './components/YogaCard.jsx';
-import Papa from 'papaparse';
-
-
-import { initializePoses, getPose } from './poseLookup.js';
+import React, { useState, useEffect } from 'react';
+import './App.css';
+import YogaBoard from './components/YogaBoard.jsx';
+import { initializePoses } from './poseLookup.js';
 
 function App() {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(null);
+  const [poses, setPoses] = useState({});
 
   useEffect(() => {
     initializePoses()
-      .then(() => setReady(true))
+      .then((loadedPoses) => {
+        setPoses(loadedPoses);
+        setReady(true);
+      })
       .catch(err => setError(err.message));
   }, []);
 
   if (error) return <div>Error loading poses: {error}</div>;
   if (!ready) return <div>Loading poses...</div>;
 
-  // Example usage
-  const mountainPose = getPose("Mountain Pose");
-  const downwardDog = getPose("Downward Dog");
-
   return (
-    <div className="p-4">
-      <YogaCard {...mountainPose} />
-      <YogaCard {...downwardDog} />
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto p-4">
+        <h1 className="text-3xl font-bold mb-6">Yoga Flow Builder</h1>
+        <YogaBoard poses={poses} />
+      </div>
     </div>
   );
 }
 
-export default App
-
+export default App;
