@@ -1,0 +1,33 @@
+name,categories,activationCost,chakraType,inversion,standing,kneeling,seated,supine,prone,activatedEffect,discardEffect
+Boat Pose,seated,3,solar,,,,0,1,,,Gain 1 energy
+Bound Angle,seated,1,sacral,,,,1,1,,,Gain 1 energy
+Bow Pose,prone,4,heart,,,0,,,1,,Gain 1 energy
+Bridge Pose,supine,3,sacral,-1,-1,,0,1,,,Gain 1 energy
+Cat Pose,kneeling,1,root,,,2,,,1,,Gain 1 energy
+Chaturanga,prone,2,solar,,,1,,,1,,Gain 1 energy
+Child's Pose,kneeling|prone,0,root,0,0,2,0,0,2,,Gain 1 energy
+Cobra Pose,prone,1,solar,,,1,,,1,,Gain 1 energy
+Corpse Pose,supine,0,crown,,,,0,1,,,Gain 1 energy
+Cow Pose,kneeling,1,heart,,,2,,,1,,Gain 1 energy
+Crow Pose,inversion,3,solar,1,0,0,0,,1,,Gain 1 energy
+Dolphin,kneeling|inversion,2,throat,1,,1,,,0,,Gain 1 energy
+Downward Dog,kneeling|inversion,1,sacral,0,0,1,0,,1,,Gain 1 energy
+Fish Pose,supine,3,throat,,,,,1,,,Gain 1 energy
+Forearm Stand,inversion,4,crown,0,,1,,,,,Gain 1 energy
+Forward Fold,standing,1,root,0,1,0,1,,0,,Gain 1 energy
+Half Moon,standing,3,thirdEye,,1,,,,,,Gain 1 energy
+Handstand,inversion,5,crown,0,1,,,,-1,,Gain 1 energy
+Headstand,inversion,3,crown,0,,1,,,,,Gain 1 energy
+Mountain Pose,standing,0,root,-1,1,1,,,,,Gain 1 energy
+Plank Pose,kneeling|prone,2,solar,0,0,0,,,1,,Gain 1 energy
+Plow Pose,supine,4,throat,1,,,0,1,,,Gain 1 energy
+Seated Forward Fold,seated,2,root,,,,1,1,,,Gain 1 energy
+Shoulder Stand,inversion|supine,4,throat,0,,,0,2,,,Gain 1 energy
+Staff Pose,seated,2,root,,,,2,0,,,Gain 1 energy
+Table Top,kneeling,0,root,,0,2,0,,0,,Gain 1 energy
+Tree Pose,standing,2,root,,1,,,,,,Gain 1 energy
+Triangle Pose,standing,2,sacral,,1,0,,,,,Gain 1 energy
+Upward Dog,prone,2,heart,0,0,1,,,1,,Gain 1 energy
+Warrior I,standing,2,solar,,1,0,,,,,Gain 1 energy
+Warrior II,standing,2,solar,,2,,,,,,Gain 1 energy
+Warrior III,standing,3,solar,0,1,,,,,,Gain 1 energy
