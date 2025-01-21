@@ -14,6 +14,7 @@ const POSITION_COLORS = {
 const YogaCard = ({ 
   name = "Unnamed Pose",
   positions = [],
+  categories=[],
   transitions = {}
 }) => {
   // Card dimensions
@@ -45,7 +46,7 @@ const YogaCard = ({
       {/* Position and transition bars */}
       {POSITION_TYPES.map((position, index) => {
         const yPos = POSITION_AREA_START + (spacing * index);
-        const isActive = positions.includes(position);
+        const isActive = categories.includes(position);
         const transitionValue = transitions[position];
         const color = POSITION_COLORS[position];
         

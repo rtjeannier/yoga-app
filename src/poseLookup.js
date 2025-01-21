@@ -17,6 +17,7 @@ let poseCache = null;
 
 const mapPoseData = (csvPose) => ({
   name: csvPose.name,
+  categories: csvPose.categories ? csvPose.categories.split('|') : [],
   positions: POSITION_TYPES
     .filter(pos => csvPose[pos] !== null && csvPose[pos] >= 0),
   transitions: Object.fromEntries(
@@ -50,4 +51,14 @@ export const getPose = (poseName) => {
     throw new Error('Poses not initialized. Call initializePoses first.');
   }
   return poseCache[poseName];
+};
+
+export const getPosesByCategory = (category) => {
+  if (!poseCache) {
+    throw new Error('Poses not initialized. Call initializePoses first.');
+  }
+  
+  return Object.values(poseCache).filter(pose => 
+    pose.categories.includes(category)
+  );
 };

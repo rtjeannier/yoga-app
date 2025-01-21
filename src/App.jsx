@@ -21,8 +21,8 @@ function App() {
   if (!ready) return <div>Loading poses...</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto p-4">
+    <div >
+      <div >
         <h1 className="text-3xl font-bold mb-6">Yoga Flow Builder</h1>
         <YogaBoard poses={poses} />
       </div>

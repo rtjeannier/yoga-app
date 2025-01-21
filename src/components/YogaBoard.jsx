@@ -3,28 +3,38 @@ import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import YogaCard from './YogaCard';
 
-// Centralized grid configuration
 const GRID_CONFIG = {
-  // Card spacing
-  CELL_WIDTH: 180,    // Width between card centers
-  CELL_HEIGHT: 300,   // Height between card centers
-  
-  // Drop zone dimensions (slightly smaller than spacing to create gaps)
-  DROPZONE_WIDTH: 260,
-  DROPZONE_HEIGHT: 380,
-  
-  // Minimum board dimensions in cells
+  CELL_WIDTH: 180,
+  CELL_HEIGHT: 300,
+  SPACING: 20,
   MIN_COLS: 3,
-  MIN_ROWS: 2,
-  
-  // Extra cells to add beyond the last card for dropping space
-  EXTRA_CELLS: 2
+  MAX_COLS: 6,
+  HORIZONTAL_PADDING: 100,
 };
 
-const DraggableYogaCard = ({ pose, position, onMove }) => {
+const ZONES = {
+  draw: {
+    id: 'draw',
+    type: 'draw',
+    title: 'Draw Zone',
+  },
+  player1: {
+    id: 'player1',
+    type: 'player',
+    title: 'Player 1 Hand',
+    maxCards: 10,
+    rows: 1,
+    cols: 10,
+  }
+};
+
+const DraggableYogaCard = ({ pose, position, zoneId }) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'YOGA_CARD',
-    item: { id: pose.name },
+    item: { 
+      id: pose.name,
+      sourceZoneId: zoneId 
+    },
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
@@ -33,12 +43,13 @@ const DraggableYogaCard = ({ pose, position, onMove }) => {
   return (
     <div 
       ref={drag} 
+      className="absolute transition-all duration-200"
       style={{
         opacity: isDragging ? 0.5 : 1,
-        transform: `translate(${position.x * GRID_CONFIG.CELL_WIDTH}px, ${position.y * GRID_CONFIG.CELL_HEIGHT}px)`,
-        position: 'absolute',
+        left: position.x * (GRID_CONFIG.CELL_WIDTH + GRID_CONFIG.SPACING),
+        top: position.y * (GRID_CONFIG.CELL_HEIGHT + GRID_CONFIG.SPACING),
         cursor: 'move',
-        transition: 'transform 0.3s ease-in-out'
+        zIndex: isDragging ? 1000 : 1
       }}
     >
       <YogaCard {...pose} />
@@ -46,104 +57,209 @@ const DraggableYogaCard = ({ pose, position, onMove }) => {
   );
 };
 
-const GridCell = ({ x, y, onDrop, isVisible }) => {
+  const Zone = ({ zone, children, onDrop, cardCount, maxColumns }) => {
+
+    
+  const getZoneDimensions = () => {
+    if (zone.type === 'draw') {
+      const numCards = cardCount || 0;
+      const columns = Math.max(GRID_CONFIG.MIN_COLS, Math.min(maxColumns, cardCount));
+      const rows = Math.ceil(numCards / columns);
+      return {
+        cols: columns,
+        rows: rows
+      };
+    }
+    return {
+      cols: zone.cols,
+      rows: zone.rows,
+    };
+  };
+  const dimensions = getZoneDimensions();
+  
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'YOGA_CARD',
-    drop: (item) => onDrop(item.id, { x, y }),
+    drop: (item, monitor) => {
+      const dropOffset = monitor.getClientOffset();
+      const zoneBounds = document.getElementById(zone.id).getBoundingClientRect();
+      
+      const relativeX = Math.floor((dropOffset.x - zoneBounds.left) / (GRID_CONFIG.CELL_WIDTH + GRID_CONFIG.SPACING));
+      const relativeY = Math.floor((dropOffset.y - zoneBounds.top) / (GRID_CONFIG.CELL_HEIGHT + GRID_CONFIG.SPACING));
+      
+      const x = Math.min(Math.max(0, relativeX), dimensions.cols - 1);
+      const y = Math.min(Math.max(0, relativeY), dimensions.rows - 1);
+      
+      onDrop(item.id, { x, y }, zone.id);
+      return { moved: true };
+    },
     collect: (monitor) => ({
-      isOver: monitor.isOver(),
+      isOver: !!monitor.isOver(),
     }),
-  }));
+  }), [dimensions]);
 
-  if (!isVisible) return null;
+  const width = dimensions.cols * (GRID_CONFIG.CELL_WIDTH + GRID_CONFIG.SPACING) - GRID_CONFIG.SPACING;
+  const height = dimensions.rows * (GRID_CONFIG.CELL_HEIGHT + GRID_CONFIG.SPACING) - GRID_CONFIG.SPACING;
 
   return (
-    <div
+    <div 
+      id={zone.id}
       ref={drop}
+      className={`relative p-4 rounded-lg mb-4 ${zone.type === 'draw' ? 'bg-indigo-50 border-indigo-500' : 'bg-blue-50 border-blue-500'} border-4`}
       style={{
-        width: GRID_CONFIG.DROPZONE_WIDTH,
-        height: GRID_CONFIG.DROPZONE_HEIGHT,
-        position: 'absolute',
-        left: x * GRID_CONFIG.CELL_WIDTH,
-        top: y * GRID_CONFIG.CELL_HEIGHT,
+        width,
+        minHeight: height,
       }}
-      className={`border-2 border-dashed rounded-lg ${
-        isOver ? 'border-blue-400 bg-blue-50' : 'border-gray-200'
-      }`}
-    />
+    >
+      <div className="font-bold text-xl mb-4 p-2 bg-white rounded">
+        {zone.title}
+      </div>
+      <div className="relative" style={{ height }}>
+        {children}
+      </div>
+    </div>
   );
 };
 
 const YogaBoard = ({ poses }) => {
-  const [cardPositions, setCardPositions] = useState(() => {
-    return Object.keys(poses).reduce((acc, poseName, index) => ({
-      ...acc,
-      [poseName]: {
-        x: index,
-        y: 0
-      }
-    }), {});
+  const [maxColumns, setMaxColumns] = useState(() => {
+    const availableWidth = window.innerWidth - (GRID_CONFIG.HORIZONTAL_PADDING * 2);
+    const calculatedCols = Math.floor(availableWidth / (GRID_CONFIG.CELL_WIDTH + GRID_CONFIG.SPACING));
+    return Math.min(
+      Math.max(GRID_CONFIG.MIN_COLS, calculatedCols),
+      GRID_CONFIG.MAX_COLS
+    );
   });
 
-  const [boardBounds, setBoardBounds] = useState({ maxX: 0, maxY: 0 });
-
   useEffect(() => {
-    const maxX = Math.max(
-      GRID_CONFIG.MIN_COLS,
-      Math.max(...Object.values(cardPositions).map(pos => pos.x)) + GRID_CONFIG.EXTRA_CELLS
-    );
-    const maxY = Math.max(
-      GRID_CONFIG.MIN_ROWS,
-      Math.max(...Object.values(cardPositions).map(pos => pos.y)) + GRID_CONFIG.EXTRA_CELLS
-    );
-    setBoardBounds({ maxX, maxY });
-  }, [cardPositions]);
+    const handleResize = () => {
+      const availableWidth = window.innerWidth - (GRID_CONFIG.HORIZONTAL_PADDING * 2);
+      const calculatedCols = Math.floor(availableWidth / (GRID_CONFIG.CELL_WIDTH + GRID_CONFIG.SPACING));
+      const newMaxColumns = Math.min(
+        Math.max(GRID_CONFIG.MIN_COLS, calculatedCols),
+        GRID_CONFIG.MAX_COLS
+      );
+      setMaxColumns(newMaxColumns);
+    };
 
-  const handleDrop = (cardId, newPosition) => {
-    setCardPositions(prev => ({
-      ...prev,
-      [cardId]: newPosition
-    }));
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const [cardPositions, setCardPositions] = useState(() => {
+    const numCards = Object.keys(poses).length;
+    return Object.keys(poses).reduce((acc, poseName, index) => {
+      return {
+        ...acc,
+        [poseName]: {
+          x: index % maxColumns,
+          y: Math.floor(index / maxColumns),
+          zoneId: 'draw'
+        }
+      };
+    }, {});
+  });
+
+  const reflowDrawZone = (positions) => {
+    // Get all cards in draw zone
+    const drawCards = Object.entries(positions)
+      .filter(([_, pos]) => pos.zoneId === 'draw')
+      .map(([cardId]) => cardId);
+    
+    // Calculate new dimensions based on card count
+    const numCards = drawCards.length;
+    const columns = Math.max(GRID_CONFIG.MIN_COLS, Math.min(maxColumns, Math.ceil(numCards / 2)));
+    
+    // Create new positions for all draw zone cards
+    const newPositions = {};
+    drawCards.forEach((cardId, index) => {
+      newPositions[cardId] = {
+        x: index % columns,
+        y: Math.floor(index / columns),
+        zoneId: 'draw'
+      };
+    });
+    
+    // Return new positions object with updated draw zone positions
+    return {
+      ...positions,
+      ...newPositions
+    };
   };
+
+  const handleDrop = (cardId, newPosition, zoneId) => {
+    setCardPositions(prev => {
+      // First, check if the immediate drop position is occupied
+      const cardsInZone = Object.entries(prev)
+        .filter(([_, pos]) => pos.zoneId === zoneId);
+      
+      const isOccupied = cardsInZone.some(([_, pos]) => 
+        pos.x === newPosition.x && pos.y === newPosition.y
+      );
+
+      if (isOccupied) {
+        return prev;
+      }
+
+      // Create new positions with the dropped card
+      const newPositions = {
+        ...prev,
+        [cardId]: {
+          ...newPosition,
+          zoneId
+        }
+      };
+
+      // If this is a drop in the draw zone, reflow all cards
+      if (zoneId === 'draw') {
+        return reflowDrawZone(newPositions);
+      }
+
+      return newPositions;
+    });
+  };
+
+  const cardsByZone = Object.entries(cardPositions).reduce((acc, [cardId, position]) => {
+    if (!acc[position.zoneId]) {
+      acc[position.zoneId] = [];
+    }
+    acc[position.zoneId].push({ cardId, position });
+    return acc;
+  }, {});
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="relative overflow-auto p-4" style={{ 
-        width: '100%',
-        height: '100vh',
-      }}>
-        <div style={{ 
-          position: 'relative',
-          width: `${(boardBounds.maxX + 1) * GRID_CONFIG.CELL_WIDTH}px`,
-          height: `${(boardBounds.maxY + 1) * GRID_CONFIG.CELL_HEIGHT}px`,
-          minWidth: `${GRID_CONFIG.MIN_COLS * GRID_CONFIG.CELL_WIDTH}px`,
-          minHeight: `${GRID_CONFIG.MIN_ROWS * GRID_CONFIG.CELL_HEIGHT}px`,
-        }}>
-          {/* Grid cells */}
-          {Array.from({ length: boardBounds.maxX * boardBounds.maxY }, (_, i) => {
-            const x = i % boardBounds.maxX;
-            const y = Math.floor(i / boardBounds.maxX);
-            return (
-              <GridCell
-                key={`${x}-${y}`}
-                x={x}
-                y={y}
-                onDrop={handleDrop}
-                isVisible={true}
-              />
-            );
-          })}
-
-          {/* Draggable cards */}
-          {Object.entries(poses).map(([poseName, pose]) => (
+      <div style={{ paddingLeft: GRID_CONFIG.HORIZONTAL_PADDING, paddingRight: GRID_CONFIG.HORIZONTAL_PADDING }} className="flex flex-col items-center">
+        <Zone 
+          zone={ZONES.draw} 
+          onDrop={handleDrop}
+          cardCount={cardsByZone.draw?.length || 0}
+          maxColumns={maxColumns}
+        >
+          {cardsByZone.draw?.map(({ cardId, position }) => (
             <DraggableYogaCard
-              key={poseName}
-              pose={pose}
-              position={cardPositions[poseName]}
-              onMove={handleDrop}
+              key={cardId}
+              pose={poses[cardId]}
+              position={position}
+              zoneId="draw"
             />
           ))}
-        </div>
+        </Zone>
+
+        <Zone 
+          zone={ZONES.player1} 
+          onDrop={handleDrop}
+          cardCount={cardsByZone.player1?.length || 0}
+          maxColumns={maxColumns}
+        >
+          {cardsByZone.player1?.map(({ cardId, position }) => (
+            <DraggableYogaCard
+              key={cardId}
+              pose={poses[cardId]}
+              position={position}
+              zoneId="player1"
+            />
+          ))}
+        </Zone>
       </div>
     </DndProvider>
   );
