@@ -5,7 +5,6 @@ export const POSE_POSITIONS = {
   INVERSION: 'inversion',
   STANDING: 'standing',
   KNEELING: 'kneeling',
-  SEATED: 'seated',
   SUPINE: 'supine',
   PRONE: 'prone'
 };
